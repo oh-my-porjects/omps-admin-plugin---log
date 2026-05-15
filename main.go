@@ -48,14 +48,14 @@ var AdminWebHint string
 //
 // 后台 worker 正确写法：
 //
-//	func (p *TemplatePlugin) Init(ctx PluginContext) error {
+//	func (p *LogPlugin) Init(ctx PluginContext) error {
 //	    p.lifecycleCtx = ctx.LifecycleCtx
 //	    p.registerWorker = ctx.RegisterWorker
 //	    go p.runTicker()
 //	    return nil
 //	}
 //
-//	func (p *TemplatePlugin) runTicker() {
+//	func (p *LogPlugin) runTicker() {
 //	    done := p.registerWorker()  // 告诉 Runtime 多一个活跃 worker
 //	    defer done()                 // 退出时计数 -1
 //	    t := time.NewTicker(time.Second)
@@ -133,7 +133,7 @@ type PluginContext struct {
 // Plugin 是导出的插件实例
 // Runtime 通过 plugin.Lookup("Plugin") 加载此符号
 // 符号名必须为 "Plugin"，类型必须实现 GamePlugin 接口
-var Plugin = &TemplatePlugin{}
+var Plugin = &LogPlugin{}
 
 // Routes 声明本插件处理的所有 HTTP 路径
 // Runtime 在 plugin.Lookup("Routes") 时读取这个 map，把所有路径注册到全局路由表
@@ -148,12 +148,18 @@ var Plugin = &TemplatePlugin{}
 // 原因：Runtime 用全局 ServeMux 按路径精确分发请求。如果插件写
 // ServeHTTP 或内部 mux，多个插件之间会互相拦截请求导致 404。
 var Routes = map[string]http.HandlerFunc{
-	// 前台接口示例（以 /api/ 开头）
 	"GET /api/log/hello": handleHello,
-	// 后台管理接口示例（以 /{admin_prefix}/api/ 开头，部署时替换为项目 UUID）
+	// 审计日志接口 task/inner_plugin.md §4.4
+	"POST /api/log/audit": handleAuditWrite,
+	"GET /api/log/list":   handleAuditList,
 	"POST /{admin_prefix}/api/log/admin/ping": handleAdminPing,
-	// 注：内部自测端点 POST /_internal/selftest 由 selftest.go 在 init() 时
-	// 注册进来，避免 var Routes 初始化循环依赖（selftest 需要回查 Routes）
+}
+
+func handleAuditWrite(w http.ResponseWriter, r *http.Request) {
+	Plugin.handleAuditWrite(w, r)
+}
+func handleAuditList(w http.ResponseWriter, r *http.Request) {
+	Plugin.handleAuditList(w, r)
 }
 
 // handleHello 是包级 handler，通过全局 Plugin 变量访问插件实例
@@ -165,7 +171,7 @@ func handleAdminPing(w http.ResponseWriter, r *http.Request) {
 	Plugin.handleAdminPing(w, r)
 }
 
-// TemplatePlugin 实现 GamePlugin 接口
+// LogPlugin 实现 GamePlugin 接口
 //
 // 接口定义：
 //
@@ -176,7 +182,7 @@ func handleAdminPing(w http.ResponseWriter, r *http.Request) {
 //
 // 注意：不要在这个 struct 上添加 ServeHTTP 方法或 mux 字段。
 // 所有 HTTP 路由通过顶层 Routes 全局变量声明。
-type TemplatePlugin struct {
+type LogPlugin struct {
 	db             *sql.DB
 	logger         *slog.Logger
 	lifecycleCtx   context.Context
@@ -194,10 +200,10 @@ type TemplatePlugin struct {
 // 本地 go test 拿到的是 "dev"；线上 runtime 加载后调 Version() 拿到的是本次部署 tag。
 var version = "dev"
 
-func (p *TemplatePlugin) Name() string    { return "log" }
-func (p *TemplatePlugin) Version() string { return version }
+func (p *LogPlugin) Name() string    { return "log" }
+func (p *LogPlugin) Version() string { return version }
 
-func (p *TemplatePlugin) Init(ctx PluginContext) error {
+func (p *LogPlugin) Init(ctx PluginContext) error {
 	p.db = ctx.DB
 	p.logger = ctx.Logger
 	p.lifecycleCtx = ctx.LifecycleCtx
@@ -211,6 +217,10 @@ func (p *TemplatePlugin) Init(ctx PluginContext) error {
 	// 仅登录模块需要：把鉴权回调注册给 runtime；普通业务模块这一行可删
 	p.registerAuthIfLoginModule(ctx)
 	p.logger.Info("插件初始化", "name", p.Name(), "version", p.Version())
+	// 建表 log_audit（幂等）
+	if err := p.ensureLogAuditTable(ctx.LifecycleCtx); err != nil {
+		p.logger.Error("ensure log_audit 表失败", "err", err)
+	}
 	// 建表、读 config；不要建 mux 或注册路由
 	// 后台 worker 启动示例（见文件顶部 PluginContext 注释）：
 	//   go p.runTicker()
@@ -220,7 +230,7 @@ func (p *TemplatePlugin) Init(ctx PluginContext) error {
 // Shutdown 插件优雅关闭
 // ctx 携带超时（通常 3s）；LifecycleCtx 在 Reload 开始时已经 cancel，
 // 后台 worker 应通过 lifecycleCtx.Done() 先行停止，无需在这里重复等待。
-func (p *TemplatePlugin) Shutdown(ctx context.Context) error {
+func (p *LogPlugin) Shutdown(ctx context.Context) error {
 	fmt.Printf("[%s] 插件关闭\n", p.Name())
 	// 如果有需要等待的资源（连接池 flush、文件关闭等），在 ctx.Done() 前完成：
 	// select {
@@ -233,11 +243,11 @@ func (p *TemplatePlugin) Shutdown(ctx context.Context) error {
 }
 
 // handleHello 业务逻辑（方法接收者），由包级 handler 转发
-func (p *TemplatePlugin) handleHello(w http.ResponseWriter, r *http.Request) {
+func (p *LogPlugin) handleHello(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 0, map[string]any{"module": p.Name(), "version": p.Version()}, "ok")
 }
 
-func (p *TemplatePlugin) handleAdminPing(w http.ResponseWriter, r *http.Request) {
+func (p *LogPlugin) handleAdminPing(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 0, nil, "pong")
 }
 
