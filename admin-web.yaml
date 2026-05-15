@@ -9,7 +9,7 @@ menus:
 views:
   - key: audit_list
     type: table
-    title: 操作审计
+    title: 系统审计日志
     api: GET /api/log/list
     columns:
       - field: id
