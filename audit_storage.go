@@ -6,6 +6,12 @@ import "context"
 
 // ensureLogAuditTable 启动时建表（幂等）
 func (p *LogPlugin) ensureLogAuditTable(ctx context.Context) error {
+	if p.db == nil {
+		return nil
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	_, err := p.db.ExecContext(ctx, `
 		CREATE TABLE IF NOT EXISTS log_audit (
 			id            BIGSERIAL PRIMARY KEY,
