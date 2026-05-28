@@ -1,0 +1,285 @@
+{
+  "module": "log",
+  "module_title": "操作审计",
+  "apis": [
+    {
+      "method": "GET",
+      "path": "/api/log/hello",
+      "endpoint_key": "GET /api/log/hello",
+      "title": "模块探活",
+      "description": "返回 log 模块名称和当前版本。",
+      "auth": "public",
+      "params": [],
+      "response": {
+        "description": "模块基础信息。",
+        "data_type": "object",
+        "fields": [
+          {
+            "name": "module",
+            "type": "string",
+            "description": "模块名称。"
+          },
+          {
+            "name": "version",
+            "type": "string",
+            "description": "模块版本。"
+          }
+        ],
+        "error_codes": []
+      },
+      "response_example": {
+        "status": 0,
+        "data": {
+          "module": "log",
+          "version": "dev"
+        },
+        "msg": "ok"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/log/audit",
+      "endpoint_key": "POST /api/log/audit",
+      "title": "写入审计日志",
+      "description": "写入一条后台操作审计日志，记录操作人、动作、模块和变更前后数据。",
+      "auth": "internal",
+      "params": [
+        {
+          "name": "actor",
+          "type": "string",
+          "required": true,
+          "description": "操作人标识，通常是后台账号或系统任务名。"
+        },
+        {
+          "name": "action",
+          "type": "string",
+          "required": true,
+          "description": "操作动作编码，例如 wallet.approve。"
+        },
+        {
+          "name": "module",
+          "type": "string",
+          "required": false,
+          "description": "产生审计日志的模块名称。"
+        },
+        {
+          "name": "before",
+          "type": "object",
+          "required": false,
+          "description": "操作前状态快照。"
+        },
+        {
+          "name": "after",
+          "type": "object",
+          "required": false,
+          "description": "操作后状态快照。"
+        },
+        {
+          "name": "extra",
+          "type": "object",
+          "required": false,
+          "description": "额外上下文。"
+        }
+      ],
+      "request_example": {
+        "actor": "admin_root",
+        "action": "wallet.approve",
+        "module": "wallet",
+        "before": {
+          "status": 1
+        },
+        "after": {
+          "status": 2
+        },
+        "extra": {
+          "order_id": "Order0000001"
+        }
+      },
+      "response": {
+        "description": "返回写入成功标记。",
+        "data_type": "object",
+        "fields": [
+          {
+            "name": "ok",
+            "type": "boolean",
+            "description": "是否写入成功。"
+          }
+        ],
+        "error_codes": [
+          {
+            "status": -1,
+            "msg": "请求体解析失败、actor/action 为空或写入失败。"
+          }
+        ]
+      },
+      "response_example": {
+        "status": 0,
+        "data": {
+          "ok": true
+        },
+        "msg": ""
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/log/list",
+      "endpoint_key": "GET /api/log/list",
+      "title": "查询审计日志",
+      "description": "分页查询审计日志，可按操作人、动作、模块和创建时间范围过滤。",
+      "auth": "admin_session",
+      "params": [
+        {
+          "name": "actor",
+          "type": "string",
+          "required": false,
+          "description": "按操作人过滤。"
+        },
+        {
+          "name": "action",
+          "type": "string",
+          "required": false,
+          "description": "按动作编码过滤。"
+        },
+        {
+          "name": "module",
+          "type": "string",
+          "required": false,
+          "description": "按模块名称过滤。"
+        },
+        {
+          "name": "since",
+          "type": "string",
+          "required": false,
+          "description": "开始时间，数据库可解析的时间字符串。"
+        },
+        {
+          "name": "until",
+          "type": "string",
+          "required": false,
+          "description": "结束时间，数据库可解析的时间字符串。"
+        },
+        {
+          "name": "page",
+          "type": "integer",
+          "required": false,
+          "constraint": "默认 1，大于等于 1",
+          "description": "页码。"
+        },
+        {
+          "name": "page_size",
+          "type": "integer",
+          "required": false,
+          "constraint": "默认 50，最大 200",
+          "description": "每页数量。"
+        }
+      ],
+      "response": {
+        "description": "返回审计日志分页结果。",
+        "data_type": "object",
+        "fields": [
+          {
+            "name": "total",
+            "type": "integer",
+            "description": "总数量。"
+          },
+          {
+            "name": "items",
+            "type": "array",
+            "description": "审计日志列表。",
+            "fields": [
+              {
+                "name": "id",
+                "type": "integer",
+                "description": "审计日志自增 ID。"
+              },
+              {
+                "name": "actor",
+                "type": "string",
+                "description": "操作人标识。"
+              },
+              {
+                "name": "action",
+                "type": "string",
+                "description": "动作编码。"
+              },
+              {
+                "name": "module",
+                "type": "string",
+                "description": "模块名称。"
+              },
+              {
+                "name": "before",
+                "type": "object",
+                "description": "操作前状态。"
+              },
+              {
+                "name": "after",
+                "type": "object",
+                "description": "操作后状态。"
+              },
+              {
+                "name": "extra",
+                "type": "object",
+                "description": "额外上下文。"
+              },
+              {
+                "name": "created_at",
+                "type": "string",
+                "description": "创建时间，数据库返回的时间字符串。"
+              }
+            ]
+          }
+        ],
+        "error_codes": [
+          {
+            "status": -1,
+            "msg": "统计失败或查询失败。"
+          }
+        ]
+      },
+      "response_example": {
+        "status": 0,
+        "data": {
+          "total": 1,
+          "items": [
+            {
+              "id": 1,
+              "actor": "admin_root",
+              "action": "wallet.approve",
+              "module": "wallet",
+              "before": {
+                "status": 1
+              },
+              "after": {
+                "status": 2
+              },
+              "extra": {},
+              "created_at": "2026-05-28T00:00:00Z"
+            }
+          ]
+        },
+        "msg": ""
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/log/admin/ping",
+      "endpoint_key": "POST /api/log/admin/ping",
+      "title": "后台连通性检查",
+      "description": "管理端连通性检查接口，返回 pong。",
+      "auth": "api_key",
+      "params": [],
+      "response": {
+        "description": "固定返回 pong。",
+        "data_type": "object",
+        "fields": [],
+        "error_codes": []
+      },
+      "response_example": {
+        "status": 0,
+        "data": null,
+        "msg": "pong"
+      }
+    }
+  ]
+}
