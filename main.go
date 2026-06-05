@@ -152,7 +152,7 @@ var Routes = map[string]http.HandlerFunc{
 	// 审计日志接口 task/inner_plugin.md §4.4
 	"POST /api/log/audit": handleAuditWrite,
 	"GET /api/log/list":   handleAuditList,
-	"POST /{admin_prefix}/api/log/admin/ping": handleAdminPing,
+	"POST /api/log/admin/ping": handleAdminPing,
 }
 
 func handleAuditWrite(w http.ResponseWriter, r *http.Request) {
