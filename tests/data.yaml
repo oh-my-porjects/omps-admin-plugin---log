@@ -35,4 +35,18 @@ noise_fields: []
 #     seed_data:
 #       - {id: "{range_tag}001", name: "示例 1", created_at: "now()"}
 #       - {id: "{range_tag}002", name: "示例 2", created_at: "now()"}
-tables: {}
+tables:
+  log_audit:
+    primary_key: id
+    range_filter: "actor LIKE '{range_tag}%' OR module LIKE '{range_tag}%' OR action LIKE '{range_tag}%'"
+    snapshot_view: [id, actor, action, module, before_state, after_state, extra, created_at]
+    snapshot_summary: "actor, action, module"
+    seed_data:
+      - id: 990001
+        actor: "{range_tag}seed_actor"
+        action: "{range_tag}seed_action"
+        module: "{range_tag}seed_module"
+        before_state: "{}"
+        after_state: "{}"
+        extra: "{}"
+        created_at: "now()"
