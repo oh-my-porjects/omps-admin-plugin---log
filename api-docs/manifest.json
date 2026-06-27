@@ -1,0 +1,40 @@
+{
+  "module": "log",
+  "module_title": "操作审计",
+  "version": 1,
+  "endpoints": [
+    {
+      "key": "GET /api/log/hello",
+      "file": "endpoints/get_api_log_hello.json"
+    },
+    {
+      "key": "POST /api/log/audit",
+      "file": "endpoints/post_api_log_audit.json"
+    },
+    {
+      "key": "GET /api/log/list",
+      "file": "endpoints/get_api_log_list.json"
+    },
+    {
+      "key": "POST /api/log/admin/ping",
+      "file": "endpoints/post_api_log_admin_ping.json"
+    },
+    {
+      "key": "POST /_internal/method-call/log",
+      "file": "endpoints/post_internal_method_call_log.json"
+    },
+    {
+      "key": "POST /_internal/scheduled-trigger/log",
+      "file": "endpoints/post_internal_scheduled_trigger_log.json"
+    },
+    {
+      "key": "POST /_internal/selftest/log",
+      "file": "endpoints/post_internal_selftest_log.json"
+    }
+  ],
+  "ws_events": [],
+  "components": {
+    "schemas": [],
+    "enums": []
+  }
+}

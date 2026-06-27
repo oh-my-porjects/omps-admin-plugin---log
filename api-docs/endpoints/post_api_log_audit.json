@@ -1,0 +1,95 @@
+{
+  "method": "POST",
+  "path": "/api/log/audit",
+  "endpoint_key": "POST /api/log/audit",
+  "title": "写入审计日志",
+  "description": "写入一条后台操作审计日志，记录操作人、动作、模块和变更前后数据。",
+  "auth": "internal",
+  "params": [
+    {
+      "name": "actor",
+      "type": "string",
+      "required": true,
+      "description": "操作人标识，通常是后台账号或系统任务名。"
+    },
+    {
+      "name": "action",
+      "type": "string",
+      "required": true,
+      "description": "操作动作编码，例如 wallet.approve。"
+    },
+    {
+      "name": "module",
+      "type": "string",
+      "required": false,
+      "description": "产生审计日志的模块名称。"
+    },
+    {
+      "name": "before",
+      "type": "object",
+      "required": false,
+      "description": "操作前状态快照。",
+      "fields": []
+    },
+    {
+      "name": "after",
+      "type": "object",
+      "required": false,
+      "description": "操作后状态快照。",
+      "fields": []
+    },
+    {
+      "name": "extra",
+      "type": "object",
+      "required": false,
+      "description": "额外上下文。",
+      "fields": []
+    }
+  ],
+  "request_example": {
+    "actor": "admin_root",
+    "action": "wallet.approve",
+    "module": "wallet",
+    "before": {
+      "status": 1
+    },
+    "after": {
+      "status": 2
+    },
+    "extra": {
+      "order_id": "Order0000001"
+    }
+  },
+  "response": {
+    "description": "返回写入成功标记。",
+    "data_type": "object",
+    "fields": [
+      {
+        "name": "ok",
+        "type": "boolean",
+        "description": "是否写入成功。"
+      }
+    ],
+    "error_codes": [
+      {
+        "status": -1,
+        "msg": "请求体解析失败、actor/action 为空或写入失败。"
+      }
+    ]
+  },
+  "response_example": {
+    "status": 0,
+    "data": {
+      "ok": true
+    },
+    "msg": ""
+  },
+  "rules": [
+    {
+      "category": "security",
+      "title": "写入审计日志 鉴权边界",
+      "body": "该接口按 auth=internal 执行访问控制；未满足身份、内部令牌、后台会话或 API key 要求时必须拒绝主流程。接口职责：写入一条后台操作审计日志，记录操作人、动作、模块和变更前后数据。",
+      "code_loc": "main.go:153"
+    }
+  ]
+}
