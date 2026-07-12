@@ -1,0 +1,62 @@
+$schema: admin-ui-intent/v1
+module: log
+
+pages:
+  - key: log.audit_list
+    title: { fallback: 操作审计 }
+    description: { fallback: 追踪后台配置、权限与业务管理操作的真实审计记录。 }
+    route: /system/audit-logs
+    menu_key: system.audit_logs
+    menu_title: { fallback: 操作审计 }
+    menu_path:
+      - { key: system, title: { fallback: 系统管理 }, icon: settings, order: 900 }
+      - { key: system.operations, title: { fallback: 配置与运维 }, icon: settings, order: 20 }
+    icon: audit
+    order: 150
+    template: { id: standard-list, version: 1.0.0 }
+    size: md
+    query_capability: log.endpoint.get_api_log_list
+    pagination: true
+    filters:
+      - key: actor
+        binding: actor
+        label: { fallback: 操作人 }
+        control: search
+      - key: action
+        binding: action
+        label: { fallback: 操作类型 }
+        control: search
+      - key: module
+        binding: module
+        label: { fallback: 模块 }
+        control: search
+      - key: since
+        binding: since
+        label: { fallback: 开始时间 }
+        control: datetime-picker
+      - key: until
+        binding: until
+        label: { fallback: 结束时间 }
+        control: datetime-picker
+    columns:
+      - field: id
+        title: { fallback: 审计 ID }
+        min_width: 120
+      - field: actor
+        title: { fallback: 操作人 }
+        min_width: 140
+      - field: action
+        title: { fallback: 操作类型 }
+        min_width: 180
+      - field: module
+        title: { fallback: 模块 }
+        min_width: 150
+      - field: before
+        title: { fallback: 变更前 }
+        min_width: 220
+      - field: after
+        title: { fallback: 变更后 }
+        min_width: 220
+      - field: created_at
+        title: { fallback: 操作时间 }
+        min_width: 180

@@ -23,24 +23,12 @@ package main
 import (
 	"context"
 	"database/sql"
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
 )
-
-// AdminWebHint 是模块的「项目级管理后台描述」种子文件内容
-//
-// runtime 加载 .so 时通过 plugin.Lookup("AdminWebHint") 拿到本字符串，
-// 解析 admin-web.yaml 渲染左侧菜单 + 项目首页统计卡。
-// 平台 admin-server 编译模块时也读 admin-web.yaml + 调 AI 生成完整 spec 落库。
-//
-// 不接入管理后台的模块可以删掉这两行 + 删除 admin-web.yaml 文件（零侵入兼容）。
-//
-//go:embed admin-web.yaml
-var AdminWebHint string
 
 // PluginContext 由 Runtime 提供的共享资源
 //
