@@ -97,6 +97,9 @@ type PluginContext struct {
 	// IsOnline 查询用户是否有在线 WebSocket 连接
 	IsOnline func(userID string) bool
 
+	// InternalRequest 用于同一 runtime 内的相对路径调用；runtime 负责内部令牌和调用上下文。
+	InternalRequest func(context.Context, string, string, []byte, http.Header) (int, http.Header, []byte, error)
+
 	// Audit 上报操作审计 — runtime 端字段：runtime/internal/plugin/interface.go
 	//
 	// 在 admin 接口的写操作 handler 里调用：更新前后各 SELECT 一次拿 before/after，
@@ -139,8 +142,8 @@ var Plugin = &LogPlugin{}
 var Routes = map[string]http.HandlerFunc{
 	"GET /api/log/hello": handleHello,
 	// 审计日志接口 task/inner_plugin.md §4.4
-	"POST /api/log/audit": handleAuditWrite,
-	"GET /api/log/list":   handleAuditList,
+	"POST /api/log/audit":      handleAuditWrite,
+	"GET /api/log/list":        handleAuditList,
 	"POST /api/log/admin/ping": handleAdminPing,
 }
 
